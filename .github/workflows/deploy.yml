@@ -1,0 +1,71 @@
+name: Deploy
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check Cloudflare configuration
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID repository secret." >&2
+            exit 1
+          fi
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Manual production deployments must be dispatched from the main branch." >&2
+            exit 1
+          fi
+          if [[ "${{ github.event_name }}" == "pull_request" ]] && grep -q "11111111-1111-1111-1111-111111111111" wrangler.jsonc; then
+            echo "Replace the preview D1 database_id placeholder in wrangler.jsonc." >&2
+            exit 1
+          fi
+          if [[ "${{ github.event_name }}" != "pull_request" ]] && grep -q "00000000-0000-0000-0000-000000000000" wrangler.jsonc; then
+            echo "Replace the production D1 database_id placeholder in wrangler.jsonc." >&2
+            exit 1
+          fi
+      - run: pnpm build
+      - name: Migrate and upload PR preview
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          pnpm exec wrangler d1 migrations apply DB --env preview --remote
+          pnpm exec wrangler versions upload --env preview --preview-alias "pr-${{ github.event.number }}"
+      - name: Migrate and deploy production
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          pnpm db:migrate:remote
+          pnpm exec wrangler deploy --env=""

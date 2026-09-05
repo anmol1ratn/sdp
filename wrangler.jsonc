@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cloudflare-sveltekit-starter",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_date": "2026-09-05",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cloudflare-sveltekit-starter",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "env": {
+    "preview": {
+      "name": "cloudflare-sveltekit-starter-preview",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "cloudflare-sveltekit-starter-preview",
+          "database_id": "11111111-1111-1111-1111-111111111111",
+          "migrations_dir": "migrations"
+        }
+      ]
+    }
+  }
+}
