@@ -63,6 +63,18 @@ onMount(() => {
 <svelte:head><title>My practice | Design Practice</title></svelte:head>
 <main class="home-shell practice-dashboard">
   <section class="home-intro compact">
+    {#if data.user.id.startsWith('access:')}
+      <div class="practice-account">
+        <span>{data.user.email}</span>
+        <a
+          href="/cdn-cgi/access/logout"
+          data-sveltekit-reload
+          data-sveltekit-preload-data="off"
+          data-sveltekit-preload-code="off"
+          >Sign out</a
+        >
+      </div>
+    {/if}
     <p class="eyebrow">YOUR NOTEBOOK</p>
     <h1>Pick up the thread.</h1>
     <p class="lede">
@@ -240,3 +252,25 @@ onMount(() => {
     >
   </aside>
 </main>
+
+<style>
+.practice-account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.practice-account span {
+  overflow-wrap: anywhere;
+}
+
+.practice-account a {
+  padding: 0.5rem 0;
+  white-space: nowrap;
+  text-underline-offset: 0.2em;
+}
+</style>
