@@ -102,3 +102,84 @@ export const notes = sqliteTable(
 );
 
 export type Note = typeof notes.$inferSelect;
+
+// Practice data uses server-authenticated owner IDs, including one fixed dev-only identity.
+export const practiceState = sqliteTable(
+  'practice_state',
+  {
+    id: text('id').primaryKey(),
+    owner: text('owner').notNull(),
+    problem: text('problem').notNull().default('meeting-room'),
+    stage: integer('stage').notNull(),
+    body: text('body').notNull(),
+    version: integer('version').notNull().default(0),
+    busy: text('busy'),
+    busyUntil: integer('busy_until').notNull().default(0)
+  },
+  (t) => [uniqueIndex('practice_owner_problem_stage').on(t.owner, t.problem, t.stage)]
+);
+export const practiceSubmissions = sqliteTable(
+  'practice_submissions',
+  {
+    id: text('id').primaryKey(),
+    owner: text('owner').notNull(),
+    problem: text('problem').notNull().default('meeting-room'),
+    stage: integer('stage').notNull(),
+    answer: text('answer').notNull(),
+    attachments: text('attachments').notNull(),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [index('submissions_owner_problem_stage').on(t.owner, t.problem, t.stage)]
+);
+export const practiceReviews = sqliteTable(
+  'practice_reviews',
+  {
+    id: text('id').primaryKey(),
+    submission: text('submission')
+      .notNull()
+      .references(() => practiceSubmissions.id),
+    body: text('body').notNull(),
+    challenge: text('challenge'),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [index('reviews_submission').on(t.submission)]
+);
+export const practiceAttachments = sqliteTable(
+  'practice_attachments',
+  {
+    id: text('id').primaryKey(),
+    owner: text('owner').notNull(),
+    problem: text('problem').notNull().default('meeting-room'),
+    name: text('name').notNull(),
+    mime: text('mime').notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    bytes: integer('bytes').notNull(),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [index('attachments_owner_problem').on(t.owner, t.problem)]
+);
+export const aiBudget = sqliteTable('ai_budget', {
+  id: text('id').primaryKey(),
+  spent: integer('spent').notNull().default(0),
+  cap: integer('cap').notNull()
+});
+export const aiCalls = sqliteTable(
+  'ai_calls',
+  {
+    id: text('id').primaryKey(),
+    owner: text('owner').notNull(),
+    problem: text('problem').notNull().default('meeting-room'),
+    month: text('month').notNull(),
+    fingerprint: text('fingerprint').notNull(),
+    reserved: integer('reserved').notNull(),
+    charged: integer('charged').notNull(),
+    settled: integer('settled').notNull().default(0),
+    result: text('result'),
+    createdAt: integer('created_at').notNull()
+  },
+  (t) => [
+    index('calls_owner_created').on(t.owner, t.createdAt),
+    index('calls_owner_problem_created').on(t.owner, t.problem, t.createdAt)
+  ]
+);

@@ -1,0 +1,10 @@
+{
+  "name": "design-practice-validator-test",
+  "main": "validator-worker.ts",
+  "compatibility_date": "2026-09-05",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [{ "name": "IMAGE_VALIDATOR", "class_name": "ImageValidator" }]
+  },
+  "migrations": [{ "tag": "test-v1", "new_sqlite_classes": ["ImageValidator"] }]
+}

@@ -1,0 +1,7 @@
+import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+export const load: PageServerLoad = async (event) => {
+  const requested = Number(event.url.searchParams.get('stage') ?? 1);
+  const stage = Number.isInteger(requested) && requested > 0 ? requested : 1;
+  redirect(308, `/app/practice/meeting-room?stage=${stage}`);
+};

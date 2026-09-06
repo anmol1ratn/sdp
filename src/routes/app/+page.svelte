@@ -1,77 +1,242 @@
 <script lang="ts">
-let { data, form } = $props();
+import { onMount } from 'svelte';
+import type { ProblemSummary } from '$lib/practice/types';
+
+let { data } = $props();
+let hydrated = $state(false);
+let query = $state('');
+let difficulty = $state('all');
+let selectedTopic = $state('all');
+let statusFilter = $state('all');
+let days = $state('all');
+
+const attempts = (problem: ProblemSummary) =>
+  Object.values(problem.attemptCounts).reduce((sum, count) => sum + count, 0);
+const status = (problem: ProblemSummary) =>
+  problem.acceptedStages.length === problem.stages.length
+    ? 'completed'
+    : problem.hasDraft || attempts(problem) || problem.acceptedStages.length
+      ? 'in-progress'
+      : 'not-started';
+const label = (value: string) =>
+  value === 'completed' ? 'Completed' : value === 'in-progress' ? 'In progress' : 'Not started';
+const href = (problem: ProblemSummary) => `/app/practice/${problem.slug}?stage=${problem.unlocked}`;
+
+let ordered = $derived([...data.problems].sort((a, b) => a.curriculumOrder - b.curriculumOrder));
+let topics = $derived([...new Set(ordered.flatMap((problem) => problem.topics))].sort());
+let active = $derived(
+  ordered.find((problem) => status(problem) === 'in-progress') ??
+    ordered.find((problem) => status(problem) === 'not-started') ??
+    ordered[0]
+);
+let returning = $derived(active ? status(active) === 'in-progress' : false);
+let hasHistory = $derived(ordered.some((problem) => status(problem) !== 'not-started'));
+let recommended = $derived(
+  ordered.find((problem) => problem.id !== active?.id && status(problem) !== 'completed')
+);
+let filtered = $derived(
+  ordered.filter((problem) => {
+    const text = [problem.title, problem.summary, ...problem.topics, ...problem.prerequisites]
+      .join(' ')
+      .toLowerCase();
+    return (
+      text.includes(query.trim().toLowerCase()) &&
+      (difficulty === 'all' || problem.difficulty === difficulty) &&
+      (selectedTopic === 'all' || problem.topics.includes(selectedTopic)) &&
+      (statusFilter === 'all' || status(problem) === statusFilter) &&
+      (days === 'all' || problem.estimatedDays === Number(days))
+    );
+  })
+);
+function resetFilters() {
+  query = '';
+  difficulty = 'all';
+  selectedTopic = 'all';
+  statusFilter = 'all';
+  days = 'all';
+}
+onMount(() => {
+  hydrated = true;
+});
 </script>
 
-<svelte:head><title>Your notes | Edge Starter</title></svelte:head>
+<svelte:head><title>My practice | Design Practice</title></svelte:head>
+<main class="home-shell practice-dashboard">
+  <section class="home-intro compact">
+    <p class="eyebrow">YOUR NOTEBOOK</p>
+    <h1>Pick up the thread.</h1>
+    <p class="lede">
+      A growing library of focused system-design problems. Every revision stays yours.
+    </p>
+  </section>
 
-<main class="mx-auto max-w-3xl px-6 py-16">
-  <div class="flex flex-wrap items-start justify-between gap-5">
+  {#if active}
+    <section class="continue-card" aria-labelledby="continue-heading">
+      <div>
+        <p class="eyebrow">
+          {returning
+            ? 'CONTINUE WHERE YOU LEFT OFF'
+            : hasHistory
+              ? 'START YOUR NEXT PROBLEM'
+              : 'START YOUR FIRST PROBLEM'}
+        </p>
+        <h2 id="continue-heading">{active.title}</h2>
+        <p>{active.summary}</p>
+      </div>
+      <div class="continue-meta">
+        <span class="difficulty-badge inverse">{active.difficulty}</span>
+        <strong>Stage {active.unlocked} of {active.stages.length}</strong>
+        <span>Finish within {active.pace}</span>
+        <a class="button primary" href={href(active)}
+          >{returning ? 'Continue' : 'Start'}
+          stage {active.unlocked} →</a
+        >
+      </div>
+    </section>
+  {/if}
+
+  <section class="recommended-row" aria-labelledby="recommended-heading">
     <div>
-      <p class="text-sm text-cyan-300">Signed in as {data.user.email}</p>
-      <h1 class="mt-2 text-4xl font-semibold tracking-tight text-white">Your notes</h1>
-    </div>
-    <form method="POST" action="?/signout">
-      <button
-        class="rounded-full border border-white/20 px-4 py-2 text-sm font-medium text-white hover:border-white/40"
-        type="submit"
-      >
-        Sign out
-      </button>
-    </form>
-  </div>
-
-  <form
-    method="POST"
-    action="?/create"
-    class="mt-9 rounded-2xl border border-white/10 bg-white/[0.04] p-5"
-  >
-    <label for="body" class="text-sm font-medium text-slate-200">New note</label>
-    <textarea
-      id="body"
-      name="body"
-      rows="4"
-      maxlength="5000"
-      class="mt-3 w-full resize-y rounded-xl border border-white/15 bg-slate-900 p-4 text-white placeholder:text-slate-500"
-      placeholder="What should you remember?"
-      value={form?.action === 'create' && form?.body ? form.body : ''}
-      required
-    ></textarea>
-    {#if form?.message}
-      <p class="mt-3 text-sm text-red-300" role="alert">{form.message}</p>
-    {/if}
-    <div class="mt-4 flex justify-end">
-      <button
-        class="rounded-xl bg-cyan-300 px-5 py-2.5 font-semibold text-slate-950 hover:bg-cyan-200"
-        type="submit"
-      >
-        Save note
-      </button>
-    </div>
-  </form>
-
-  <section class="mt-10" aria-labelledby="notes-heading">
-    <h2 id="notes-heading" class="text-lg font-semibold text-white">Recent</h2>
-    {#if data.notes.length === 0}
-      <p
-        class="mt-4 rounded-2xl border border-dashed border-white/15 p-8 text-center text-slate-400"
-      >
-        No notes yet. Add the first one above.
+      <p class="eyebrow">RECOMMENDED NEXT</p>
+      <div class="recommended-title">
+        <h2 id="recommended-heading">
+          {recommended ? recommended.title : 'You have completed the current library.'}
+        </h2>
+        {#if recommended}
+          <span class="difficulty-badge">{recommended.difficulty}</span>
+        {/if}
+      </div>
+      <p>
+        {recommended ? `Next in curriculum order after your active problem. It builds on ${recommended.prerequisites.join(' and ')}.` : 'Revisit your attempt history or compare how your reasoning changed.'}
       </p>
+    </div>
+    {#if recommended}
+      <a href={href(recommended)}>Preview problem ↗</a>
     {:else}
-      <ul class="mt-4 space-y-4">
-        {#each data.notes as note (note.id)}
-          <li class="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <p class="whitespace-pre-wrap text-slate-200">{note.body}</p>
-            <div class="mt-4 flex items-center justify-between gap-4 text-xs text-slate-500">
-              <time datetime={note.updatedAt.toISOString()}>{note.updatedAt.toLocaleString()}</time>
-              <form method="POST" action="?/delete">
-                <input type="hidden" name="id" value={note.id}>
-                <button class="text-slate-400 hover:text-red-300" type="submit">Delete</button>
-              </form>
-            </div>
-          </li>
-        {/each}
-      </ul>
+      <a href="/example">Review the worked example ↗</a>
     {/if}
   </section>
+
+  <section class="library" aria-labelledby="library-heading">
+    <div class="library-heading">
+      <div>
+        <p class="eyebrow">PROBLEM LIBRARY</p>
+        <h2 id="library-heading">Find the right practice.</h2>
+      </div>
+      <span aria-live="polite">{filtered.length} of {ordered.length} problems</span>
+    </div>
+    <fieldset class="library-controls" disabled={!hydrated}>
+      <legend class="sr-only">Filter problem library</legend>
+      <label class="search-control"
+        ><span>Search</span>
+        <input
+          bind:value={query}
+          type="search"
+          placeholder="Search titles, topics, prerequisites…"
+        ></label
+      >
+      <label
+        ><span>Difficulty</span
+        ><select value={difficulty} oninput={(event) => difficulty = event.currentTarget.value}>
+          <option value="all">All</option>
+          {#each [...new Set(ordered.map((problem) => problem.difficulty))] as value}
+            <option {value}>{value}</option>
+          {/each}
+        </select></label
+      >
+      <label
+        ><span>Topic</span
+        ><select
+          value={selectedTopic}
+          oninput={(event) => selectedTopic = event.currentTarget.value}
+        >
+          <option value="all">All</option>
+          {#each topics as value}
+            <option {value}>{value}</option>
+          {/each}
+        </select></label
+      >
+      <label
+        ><span>Status</span
+        ><select value={statusFilter} oninput={(event) => statusFilter = event.currentTarget.value}>
+          <option value="all">All</option>
+          <option value="not-started">Not started</option>
+          <option value="in-progress">In progress</option>
+          <option value="completed">Completed</option>
+        </select></label
+      >
+      <label
+        ><span>Estimated time</span
+        ><select value={days} oninput={(event) => days = event.currentTarget.value}>
+          <option value="all">All days</option>
+          {#each [...new Set(ordered.map((problem) => problem.estimatedDays))].sort() as value}
+            <option value={String(value)}>{value} days</option>
+          {/each}
+        </select></label
+      >
+    </fieldset>
+
+    {#if filtered.length}
+      <div class="library-list">
+        {#each filtered as problem}
+          {@const problemStatus = status(problem)}
+          {@const totalAttempts = attempts(problem)}
+          <article class="library-card">
+            <div class="library-card-main">
+              <div class="card-top">
+                <div class="card-badges">
+                  <span class="pill status-pill">{label(problemStatus)}</span>
+                  <span class="difficulty-badge">{problem.difficulty}</span>
+                </div>
+                <span class="pace-primary">Finish within <strong>{problem.pace}</strong></span>
+              </div>
+              <h3><a href={href(problem)}>{problem.title}</a></h3>
+              <p>{problem.summary}</p>
+              <ul class="topic-list" aria-label="Problem topics">
+                {#each problem.topics as value}
+                  <li>{value}</li>
+                {/each}
+              </ul>
+            </div>
+            <ol
+              class="stage-track"
+              style={`--stage-count:${problem.stages.length};--track-edge:${50 / problem.stages.length}%`}
+              aria-label={`${problem.title} progress`}
+            >
+              {#each problem.stages as stage}
+                <li
+                  class:done={problem.acceptedStages.includes(stage.id)}
+                  class:current={stage.id === problem.unlocked && problemStatus !== 'completed'}
+                >
+                  <span class="stage-marker">{stage.order}</span>
+                  <span>{stage.order <= problem.unlocked ? stage.navTitle : 'Locked'}</span>
+                </li>
+              {/each}
+            </ol>
+            <div class="library-card-action">
+              <span>{problem.focusSessions}</span>
+              <span>{totalAttempts} {totalAttempts === 1 ? 'attempt' : 'attempts'}</span>
+              <a href={href(problem)}
+                >{problemStatus === 'not-started' ? 'Begin' : 'Open'}
+                stage {problem.unlocked} →</a
+              >
+            </div>
+          </article>
+        {/each}
+      </div>
+    {:else}
+      <div class="empty-library" role="status">
+        <h3>No problems match these filters.</h3>
+        <p>Clear the filters to see the full curriculum.</p>
+        <button type="button" onclick={resetFilters}>Reset filters</button>
+      </div>
+    {/if}
+  </section>
+
+  <aside class="dashboard-reference">
+    <a href="/example"
+      ><span class="eyebrow">WORKED EXAMPLE</span
+      ><strong>See what a concrete answer looks like ↗</strong></a
+    >
+  </aside>
 </main>

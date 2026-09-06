@@ -6,7 +6,7 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = ({ locals, url }) => {
   const next = safeInternalPath(url.searchParams.get('next'));
   if (locals.user) redirect(303, next);
-  return { next };
+  return { next, configured: !!locals.auth };
 };
 
 export const actions = {

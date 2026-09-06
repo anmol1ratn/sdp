@@ -1,0 +1,11 @@
+ALTER TABLE practice_state ADD COLUMN problem TEXT NOT NULL DEFAULT 'meeting-room';
+DROP INDEX practice_owner_stage;
+CREATE UNIQUE INDEX practice_owner_problem_stage ON practice_state(owner,problem,stage);
+ALTER TABLE practice_submissions ADD COLUMN problem TEXT NOT NULL DEFAULT 'meeting-room';
+DROP INDEX submissions_owner_stage;
+CREATE INDEX submissions_owner_problem_stage ON practice_submissions(owner,problem,stage);
+ALTER TABLE practice_attachments ADD COLUMN problem TEXT NOT NULL DEFAULT 'meeting-room';
+DROP INDEX attachments_owner;
+CREATE INDEX attachments_owner_problem ON practice_attachments(owner,problem);
+ALTER TABLE ai_calls ADD COLUMN problem TEXT NOT NULL DEFAULT 'meeting-room';
+CREATE INDEX calls_owner_problem_created ON ai_calls(owner,problem,created_at);

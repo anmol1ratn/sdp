@@ -8,7 +8,9 @@
       "!!coverage",
       "!!playwright-report",
       "!!test-results",
-      "!!.wrangler"
+      "!!.wrangler",
+      "!!output",
+      "!!static/voice"
     ]
   },
   "formatter": {

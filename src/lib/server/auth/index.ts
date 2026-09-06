@@ -10,7 +10,7 @@ export function createAuth(env: RuntimeEnv) {
   const baseUrl = new URL(env.BETTER_AUTH_URL);
 
   return betterAuth({
-    appName: 'Cloudflare SvelteKit Starter',
+    appName: 'Design Practice',
     baseURL: baseUrl.origin,
     secret: env.BETTER_AUTH_SECRET,
     database: drizzleAdapter(createDb(env.DB), {

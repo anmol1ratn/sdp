@@ -1,5 +1,17 @@
-# Copy to .dev.vars for local development. Never commit .dev.vars.
+# Never commit .dev.vars or real keys. `pnpm dev:local` needs no credentials.
+# Optional legacy Google development login; production uses Access in wrangler.jsonc.
 BETTER_AUTH_SECRET="replace-with-at-least-32-random-characters"
 BETTER_AUTH_URL="http://localhost:5173"
-GOOGLE_CLIENT_ID="replace-with-google-client-id"
-GOOGLE_CLIENT_SECRET="replace-with-google-client-secret"
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+# Optional locally; server-side only. Blank means live feedback is unavailable.
+GEMINI_API_KEY=""
+GEMINI_MODEL="gemini-3.8-flash"
+AI_USER_MONTHLY_USD="5"
+AI_GLOBAL_MONTHLY_USD="25"
+# Required in production; comma-separated emails for the 4–5 members.
+PRACTICE_ALLOWED_EMAILS=""
+# Default Gemini prices automatically change on 2027-01-01 (UTC).
+# Set both explicit prices when replacing the model; values are USD / million tokens.
+# AI_INPUT_USD_PER_MILLION="0.75"
+# AI_OUTPUT_USD_PER_MILLION="3.75"
