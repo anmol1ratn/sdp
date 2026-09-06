@@ -20,7 +20,13 @@ export function context(event: RequestEvent) {
     .split(',')
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
-  if (!dev && (!allowed.length || !allowed.includes(event.locals.user.email.toLowerCase())))
+  // Access membership is enforced by its policy and verified by the server hook.
+  // Keep the legacy allowlist only for deployments using another login method.
+  if (
+    !dev &&
+    env.AUTH_MODE !== 'cloudflare-access' &&
+    (!allowed.length || !allowed.includes(event.locals.user.email.toLowerCase()))
+  )
     error(
       403,
       'This practice space is private. Ask its owner to add your email to the member list.'

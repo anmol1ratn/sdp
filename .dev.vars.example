@@ -9,7 +9,7 @@ GEMINI_API_KEY=""
 GEMINI_MODEL="gemini-3.8-flash"
 AI_USER_MONTHLY_USD="5"
 AI_GLOBAL_MONTHLY_USD="25"
-# Required in production; comma-separated emails for the 4–5 members.
+# Required only for legacy non-Access production login; Access uses its own policy.
 PRACTICE_ALLOWED_EMAILS=""
 # Default Gemini prices automatically change on 2027-01-01 (UTC).
 # Set both explicit prices when replacing the model; values are USD / million tokens.
